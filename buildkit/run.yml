@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: buildkit-test-pipeline-run
+spec:
+  serviceAccountName: buildpacks-service-account
+  pipelineRef:
+    name: buildkit-test-pipeline
+  workspaces:
+  - name: shared-workspace
+    persistentvolumeclaim:
+      claimName: buildpacks-source-pvc
+  resources:
+  - name: buildkit-app-image
+    resourceRef:
+      name: buildkit-app-image

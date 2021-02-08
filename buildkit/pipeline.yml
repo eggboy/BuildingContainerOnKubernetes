@@ -1,0 +1,53 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: buildkit-app-image
+spec:
+  type: image
+  params:
+    - name: url
+      value: test.azurecr.io/node-docker-example ## Registry URL
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: buildkit-test-pipeline
+spec:
+  workspaces:
+    - name: shared-workspace
+  resources:
+    - name: buildkit-app-image
+      type: image
+  tasks:
+    - name: fetch-repository
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: https://github.com/waldemarnt/node-docker-example.git
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+    - name: buildkit-image
+      taskRef:
+        name: buildkit
+      runAfter:
+        - fetch-repository
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: BUILDKIT_DAEMON_ADDRESS
+          value: "tcp://[IP ADDRESS]:1234" ## BuildKit Address
+        - name: BUILDKIT_CLIENT_IMAGE
+          value: "docker.io/moby/buildkit:v0.6.2@sha256:db234cf7362aef489e4273a6937794cb19c09ba15c7ee0ec6f85044086ea4f6a"
+        - name: BUILDKIT_CLIENT_CERTS
+          value: "buildkit-client-certs"
+      resources:
+        outputs:
+          - name: image
+            resource: buildkit-app-image
